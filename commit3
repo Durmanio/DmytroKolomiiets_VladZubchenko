@@ -1,0 +1,348 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <sstream>
+
+struct Product {
+    std::string name;
+    double price;
+    std::string specifications;
+};
+
+class ShoppingCart {
+private:
+    std::vector<Product> products;
+
+public:
+    void addProduct(const Product& product) {
+        products.push_back(product);
+    }
+
+    void displayCart() const {
+        if (products.empty()) {
+            std::cout << "The basket is empty." << std::endl;
+            return;
+        }
+
+        std::cout << "Items in cart:" << std::endl;
+        for (const auto& product : products) {
+            std::cout << "Name: " << product.name << std::endl;
+            std::cout << "Price: " << product.price << std::endl;
+            std::cout << "Characteristics: " << product.specifications << std::endl;
+            std::cout << std::endl;
+        }
+    }
+
+    double calculateTotalPrice() const {
+        double totalPrice = 0.0;
+        for (const auto& product : products) {
+            totalPrice += product.price;
+        }
+        return totalPrice;
+    }
+
+    bool isEmpty() const {
+        return products.empty();
+    }
+};
+
+class User {
+private:
+    std::string username;
+    std::string password;
+    ShoppingCart cart;
+
+public:
+    User(const std::string& username, const std::string& password)
+            : username(username), password(password) {}
+
+    std::string getUsername() const {
+        return username;
+    }
+
+    bool checkPassword(const std::string& inputPassword) const {
+        return password == inputPassword;
+    }
+
+    ShoppingCart& getCart() {
+        return cart;
+    }
+};
+
+std::string getUserInput(const std::string& prompt) {
+    std::string input;
+    std::cout << prompt;
+    std::cin >> input;
+    return input;
+}
+
+void printMainMenu() {
+    std::cout << "=======================================" << std::endl;
+    std::cout << "Welcome to the online store \"Cellmart\"!" << std::endl;
+    std::cout << "=======================================" << std::endl;
+    std::cout << "1. Create account" << std::endl;
+    std::cout << "2. Log in" << std::endl;
+    std::cout << "3. Exit" << std::endl;
+}
+
+void printUserMenu(const std::string& username) {
+    std::cout << "========================" << std::endl;
+    std::cout << "You are logged in as - " << username << std::endl;
+    std::cout << "Welcome to Cellmart!" << std::endl;
+    std::cout << "========================" << std::endl;
+    std::cout << "1. View products" << std::endl;
+    std::cout << "2. Add product to cart" << std::endl;
+    std::cout << "3. View cart and total price" << std::endl;
+    std::cout << "4. Delivery registration" << std::endl;
+    std::cout << "5. Delete account" << std::endl;
+    std::cout << "6. Log out" << std::endl;
+    std::cout << "7. Exit" << std::endl;
+}
+
+void printFunctionHeader(const std::string& functionName) {
+    std::cout << "================================================" << std::endl;
+    std::cout << "           " << functionName << std::endl;
+    std::cout << "================================================" << std::endl;
+}
+
+void createUserAccount(std::vector<User>& users, User& currentUser, bool& accountCreated) {
+    if (accountCreated) {
+        std::cout << "You already have an account." << std::endl;
+    } else {
+        std::string username = getUserInput("Enter a username: ");
+        std::string password = getUserInput("Enter a password: ");
+
+        users.emplace_back(username, password);
+        currentUser = User(username, password);
+        accountCreated = true;
+        std::cout << std::endl;
+        std::cout << "Account successfully created!" << std::endl;
+    }
+}
+
+void loginUser(std::vector<User>& users, User& currentUser, bool& loggedInMessageDisplayed) {
+    std::string username = getUserInput("Enter your username: ");
+    std::string password = getUserInput("Enter your password: ");
+
+    bool found = false;
+    for (const auto& user : users) {
+        if (user.getUsername() == username && user.checkPassword(password)) {
+            currentUser = user;
+            found = true;
+            break;
+        }
+    }
+
+    if (found) {
+        loggedInMessageDisplayed = false;
+        std::cout << std::endl;
+        std::cout << "Logged in as " << currentUser.getUsername() << std::endl;
+        std::cout << "Welcome to Cellmart!" << std::endl;
+    } else {
+        std::cout << std::endl;
+        std::cout << "Incorrect username or password." << std::endl;
+    }
+}
+
+void viewProducts(const std::vector<Product>& availableProducts) {
+    printFunctionHeader("View products");
+    std::cout << std::endl;
+    std::cout << "Available products:" << std::endl;
+    for (size_t i = 0; i < availableProducts.size(); ++i) {
+        const auto& product = availableProducts[i];
+        std::cout << i + 1 << ". " << product.name << " - " << product.price << " USD" << std::endl;
+    }
+}
+
+void addProductToCart(const std::vector<Product>& availableProducts, User& currentUser) {
+    std::cout << std::endl;
+    std::cout << "Enter the number of the product you want to add to the cart, separated by a space or comma: ";
+    std::string productNumbers;
+    std::cin.ignore();
+
+    std::getline(std::cin, productNumbers);
+    std::istringstream iss(productNumbers);
+    std::vector<size_t> selectedProductIndices;
+    size_t productIndex;
+
+    while (iss >> productIndex) {
+        if (productIndex > 0 && productIndex <= availableProducts.size()) {
+            selectedProductIndices.push_back(productIndex);
+        }
+    }
+
+    if (!selectedProductIndices.empty()) {
+        for (const auto& index : selectedProductIndices) {
+            const auto& product = availableProducts[index - 1];
+            currentUser.getCart().addProduct(product);
+        }
+        std::cout << "The product has been added to the cart." << std::endl;
+    } else {
+        std::cout << "Invalid item numbers." << std::endl;
+    }
+}
+
+void viewCartAndTotalPrice(User currentUser) {
+    printFunctionHeader("View cart and total price");
+    std::cout << std::endl;
+    std::cout << "Cart of " << currentUser.getUsername() << ":" << std::endl;
+    currentUser.getCart().displayCart();
+    std::cout << "Total price: " << currentUser.getCart().calculateTotalPrice() << " USD" << std::endl;
+}
+
+void registerDelivery(User currentUser) {
+    printFunctionHeader("Delivery registration");
+    std::cout << std::endl;
+    if (currentUser.getCart().isEmpty()) {
+        std::cout << "Please select items for delivery." << std::endl;
+    } else {
+        std::cout << "Order continuation..." << std::endl;
+
+        std::string address;
+        std::string city;
+        std::string phoneNumber;
+
+        std::cout << "Enter your post office number: ";
+        std::cin.ignore();
+        std::getline(std::cin, address);
+
+        std::cout << "Enter your city: ";
+        std::getline(std::cin, city);
+
+        std::cout << "Enter your phone number (+380XXXXXXXXX): ";
+        std::cin >> phoneNumber;
+
+        if (phoneNumber.length() == 13 && phoneNumber[0] == '+' && std::all_of(phoneNumber.begin() + 1, phoneNumber.end(), ::isdigit)) {
+            std::cout << "=============================================================================================================================" << std::endl;
+            std::cout << "Thank you for the order, please wait for the message about the arrival of the parcel! Have a good day. Your Cellmart Store :)" << std::endl;
+            std::cout << "=============================================================================================================================" << std::endl;
+        } else {
+            std::cout << "The phone number was entered incorrectly." << std::endl;
+        }
+    }
+}
+
+void deleteAccount(std::vector<User>& users, User& currentUser, bool& accountCreated, bool& loggedInMessageDisplayed) {
+    printFunctionHeader("Delete account");
+    std::cout << std::endl;
+    users.erase(std::remove_if(users.begin(), users.end(),
+                               [&](const User& user) { return user.getUsername() == currentUser.getUsername(); }),
+                users.end());
+
+    currentUser = User("", "");
+    accountCreated = false;
+    loggedInMessageDisplayed = false;
+    std::cout << "Account deleted successfully." << std::endl;
+}
+
+int main() {
+    std::vector<Product> availableProducts{
+            {"iPhone 14 Pro Max", 1799.99, "512GB. Color: Purple"},
+            {"iPhone 14 Pro", 1399.99, "512GB. Color: Gold"},
+            {"iPhone 14", 999.99, "512GB. Color: Red"},
+            {"iPhone 13 Pro Max", 1499.00, "256GB. Color: Blue"},
+            {"iPhone 13 mini", 454.99, "128GB. Color: Pink"},
+            {"Samsung Galaxy S23 Ultra", 1899.98, "1TB. Color: Black"},
+            {"Samsung Galaxy S22 Ultra", 1549.98, "256GB. Color: White"},
+            {"Samsung Galaxy Z Flip3 5G", 700.19, "256GB. Color: White"},
+            {"Samsung Galaxy Note 20 5G", 212.85, "128GB. Color: Bronze"},
+            {"Samsung Galaxy S21", 220.10, "128GB. Color: Purple"}
+    };
+
+    std::vector<User> users;
+    User currentUser("", "");
+
+    bool exitProgram = false;
+    bool accountCreated = false;
+    bool loggedInMessageDisplayed = false;
+
+    while (!exitProgram) {
+        std::cout << std::endl;
+
+        if (currentUser.getUsername() == "") {
+            printMainMenu();
+        } else {
+            if (!loggedInMessageDisplayed) {
+                printUserMenu(currentUser.getUsername());
+                loggedInMessageDisplayed = true;
+            } else {
+                printUserMenu(currentUser.getUsername());
+            }
+        }
+
+        std::cout << "=================" << std::endl;
+        std::cout << "Select an action: ";
+        int choice;
+        std::cin >> choice;
+
+        if (currentUser.getUsername() == "") {
+            switch (choice) {
+                case 1: {
+                    createUserAccount(users, currentUser, accountCreated);
+                    break;
+                }
+                case 2: {
+                    loginUser(users, currentUser, loggedInMessageDisplayed);
+                    break;
+                }
+                case 3: {
+                    std::cout << std::endl;
+                    std::cout << "Goodbye, we are waiting for you again!" << std::endl;
+                    exitProgram = true;
+                    break;
+                }
+                default: {
+                    std::cout << std::endl;
+                    std::cout << "Wrong choice. Try again." << std::endl;
+                    break;
+                }
+            }
+        } else {
+            switch (choice) {
+                case 1: {
+                    viewProducts(availableProducts);
+                    break;
+                }
+                case 2: {
+                    addProductToCart(availableProducts, currentUser);
+                    break;
+                }
+                case 3: {
+                    viewCartAndTotalPrice(currentUser);
+                    break;
+                }
+                case 4: {
+                    registerDelivery(currentUser);
+                    break;
+                }
+                case 5: {
+                    deleteAccount(users, currentUser, accountCreated, loggedInMessageDisplayed);
+                    break;
+                }
+                case 6: {
+                    printFunctionHeader("Log out");
+                    std::cout << std::endl;
+                    currentUser = User("", "");
+                    loggedInMessageDisplayed = false;
+                    std::cout << "You have successfully logged out." << std::endl;
+                    break;
+                }
+                case 7: {
+                    printFunctionHeader("Exit");
+                    std::cout << std::endl;
+                    std::cout << "Goodbye!" << std::endl;
+                    exitProgram = true;
+                    break;
+                }
+                default: {
+                    printFunctionHeader("Invalid choice");
+                    std::cout << std::endl;
+                    std::cout << "Wrong choice. Try again." << std::endl;
+                    break;
+                }
+            }
+        }
+    }
+
+    return 0;
+}
