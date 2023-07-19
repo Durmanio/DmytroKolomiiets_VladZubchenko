@@ -1,0 +1,260 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+struct Product {
+    std::string name;
+    double price;
+    std::string specifications;
+};
+
+class ShoppingCart {
+private:
+    std::vector<Product> products;
+
+public:
+    void addProduct(const Product& product) {
+        products.push_back(product);
+    }
+
+    void displayCart() const {
+        if (products.empty()) {
+            std::cout << "The cart is empty." << std::endl;
+            return;
+        }
+
+        std::cout << "Items in the cart:" << std::endl;
+        for (const auto& product : products) {
+            std::cout << "Name: " << product.name << std::endl;
+            std::cout << "Price: " << product.price << std::endl;
+            std::cout << "Specifications: " << product.specifications << std::endl;
+            std::cout << std::endl;
+        }
+    }
+
+    double calculateTotalPrice() const {
+        double totalPrice = 0.0;
+        for (const auto& product : products) {
+            totalPrice += product.price;
+        }
+        return totalPrice;
+    }
+};
+
+class User {
+private:
+    std::string username;
+    std::string password;
+    ShoppingCart cart;
+
+public:
+    User(const std::string& username, const std::string& password)
+            : username(username), password(password) {}
+
+    std::string getUsername() const {
+        return username;
+    }
+
+    bool checkPassword(const std::string& inputPassword) const {
+        return password == inputPassword;
+    }
+
+    ShoppingCart& getCart() {
+        return cart;
+    }
+};
+
+void viewProducts(const std::vector<Product>& availableProducts) {
+    std::cout << "Available products:" << std::endl;
+    for (size_t i = 0; i < availableProducts.size(); ++i) {
+        const auto& product = availableProducts[i];
+        std::cout << i + 1 << ". " << product.name << " - " << product.price << " USD" << std::endl;
+    }
+}
+
+void addToCart(User& currentUser, const std::vector<Product>& availableProducts) {
+    viewProducts(availableProducts);
+
+    std::cout << "Enter the number of the product you want to add to the cart:";
+    size_t productIndex;
+    std::cin >> productIndex;
+
+    if (productIndex > 0 && productIndex <= availableProducts.size()) {
+        const auto& product = availableProducts[productIndex - 1];
+        currentUser.getCart().addProduct(product);
+        std::cout << "The product has been added to the cart." << std::endl;
+    } else {
+        std::cout << "Invalid item number." << std::endl;
+    }
+}
+
+void viewCartAndTotalPrice(User currentUser) {
+    std::cout << "User's cart: " << currentUser.getUsername() << ":" << std::endl;
+    currentUser.getCart().displayCart();
+    std::cout << "Total price: " << currentUser.getCart().calculateTotalPrice() << " USD" << std::endl;
+}
+
+void deleteAccount(std::vector<User>& users, User& currentUser) {
+    users.erase(std::remove_if(users.begin(), users.end(),
+                               [&](const User& user) { return user.getUsername() == currentUser.getUsername(); }),
+                users.end());
+
+    currentUser = User("", "");
+    std::cout << "Account deleted successfully." << std::endl;
+}
+
+        //Функції що додаються
+void handleRegisteredUser(User& currentUser, const std::vector<Product>& availableProducts, std::vector<User>& users);
+void handleUnregisteredUser(User& currentUser, const std::vector<Product>& availableProducts, std::vector<User>& users);
+int getUserAction(const std::string& userStatus);
+
+        //Отримання дій користувача
+int getUserAction(const std::string& userStatus) {
+    int choice;
+    std::cout << std::endl;
+    std::cout << userStatus;
+    std::cin >> choice;
+    return choice;
+}
+
+        // Обробка дій не зареєстрованого користувача
+void handleUnregisteredUser(User& currentUser, const std::vector<Product>& availableProducts, std::vector<User>& users) {
+    int choice = getUserAction("1. Create an account\n2. Log in\n3. Exit\nSelect an action: ");
+
+    switch (choice) {
+        case 1: {
+            std::string username;
+            std::string password;
+
+            std::cout << "Enter a username: ";
+            std::cin >> username;
+
+            std::cout << "Enter a password: ";
+            std::cin >> password;
+
+            users.emplace_back(username, password);
+            std::cout << std::endl;
+            std::cout << "Account created successfully!" << std::endl;
+            break;
+        }
+        case 2: {
+            if (currentUser.getUsername() != "") {
+                std::cout << "You are already logged in as " << currentUser.getUsername() << std::endl;
+                break;
+            }
+
+            if (users.empty()) {
+                std::cout << "No user found, first, create an account." << std::endl;
+                break;
+            }
+
+            std::cout << "Enter your login details: " << std::endl;
+
+            std::string usernameInput;
+            std::string passwordInput;
+
+            std::cout << "Username: ";
+            std::cin >> usernameInput;
+
+            std::cout << "Password: ";
+            std::cin >> passwordInput;
+
+            bool loggedIn = false;
+            for (const User& user : users) {
+                if (user.getUsername() == usernameInput && user.checkPassword(passwordInput)) {
+                    currentUser = user;
+                    loggedIn = true;
+                    break;
+                }
+            }
+
+            if (loggedIn) {
+                std::cout << "Logged in as " << currentUser.getUsername() << std::endl;
+            } else {
+                std::cout << "Invalid username or password." << std::endl;
+            }
+
+            break;
+        }
+        case 3: {
+            std::cout << std::endl;
+            std::cout << "Goodbye!" << std::endl;
+            exit(0);
+        }
+        default: {
+            std::cout << std::endl;
+            std::cout << "Wrong choice. Try again." << std::endl;
+            break;
+        }
+    }
+}
+
+        // Обробка дій зареєстрованого користувача
+void handleRegisteredUser(User& currentUser, const std::vector<Product>& availableProducts, std::vector<User>& users) {
+    int choice = getUserAction("1. View products\n2. Add a product to the cart\n3. View the cart and total price\n"
+                               "4. Delete the account\n5. Log out\n6. Exit\nSelect an action: ");
+
+    switch (choice) {
+        case 1: {
+            viewProducts(availableProducts);
+            break;
+        }
+        case 2: {
+            addToCart(currentUser, availableProducts);
+            break;
+        }
+        case 3: {
+            viewCartAndTotalPrice(currentUser);
+            break;
+        }
+        case 4: {
+            deleteAccount(users, currentUser);
+            break;
+        }
+        case 5: {
+            currentUser = User("", "");
+            std::cout << "You have successfully logged out." << std::endl;
+            break;
+        }
+        case 6: {
+            std::cout << std::endl;
+            std::cout << "Goodbye!" << std::endl;
+            exit(0);
+        }
+        default: {
+            std::cout << std::endl;
+            std::cout << "Wrong choice. Try again." << std::endl;
+            break;
+        }
+    }
+}
+
+int main() {
+    std::vector<Product> availableProducts{
+            {"iPhone 14 Pro Max", 1799.99, "512GB. Color: Purple"},
+            {"iPhone 14 Pro", 1399.99, "512GB. Color: Gold"},
+            {"iPhone 14", 999.99, "512GB. Color: Red"},
+            {"iPhone 13 Pro Max", 1499.00, "256GB. Color: Blue"},
+            {"iPhone 13 mini", 454.99, "128GB. Color: Pink"},
+            {"Samsung Galaxy S23 Ultra", 1899.98, "1TB. Color: Black"},
+            {"Samsung Galaxy S22 Ultra", 1549.98, "256GB. Color: White"},
+            {"Samsung Galaxy Z Flip3 5G", 700.19, "256GB. Color: White"},
+            {"Samsung Galaxy Note 20 5G", 212.85, "128GB. Color: Bronze"},
+            {"Samsung Galaxy S21", 220.10, "128GB. Color: Purple"}
+    };
+
+    std::vector<User> users;
+    User currentUser("", "");
+
+    std::cout << "Welcome to the online store \"Cellmart\"!" << std::endl;
+
+    while (true) {
+        std::cout << std::endl;
+
+        if (currentUser.getUsername() == "") {
+            handleUnregisteredUser(currentUser, availableProducts, users);
+        } else {
+            handleRegisteredUser(currentUser, availableProducts, users);
+        }
+    }
+}
